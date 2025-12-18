@@ -1,5 +1,20 @@
 {
   "version": "7",
   "dialect": "mysql",
-  "entries": []
+  "entries": [
+    {
+      "idx": 0,
+      "version": "5",
+      "when": 1766076155142,
+      "tag": "0000_moaning_ender_wiggin",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "5",
+      "when": 1766076288326,
+      "tag": "0001_chemical_selene",
+      "breakpoints": true
+    }
+  ]
 }

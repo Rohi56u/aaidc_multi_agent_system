@@ -25,4 +25,42 @@ export const users = mysqlTable("users", {
 export type User = typeof users.$inferSelect;
 export type InsertUser = typeof users.$inferInsert;
 
-// TODO: Add your tables here
+/**
+ * Analysis history table - tracks all repository analyses performed by users
+ */
+export const analysisHistory = mysqlTable("analysis_history", {
+  id: int("id").autoincrement().primaryKey(),
+  userId: int("userId").notNull(),
+  repositoryUrl: varchar("repositoryUrl", { length: 255 }).notNull(),
+  repositoryName: varchar("repositoryName", { length: 255 }).notNull(),
+  repositoryOwner: varchar("repositoryOwner", { length: 255 }).notNull(),
+  status: mysqlEnum("status", ["pending", "processing", "completed", "failed"]).default("pending").notNull(),
+  errorMessage: text("errorMessage"),
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+  updatedAt: timestamp("updatedAt").defaultNow().onUpdateNow().notNull(),
+});
+
+export type AnalysisHistory = typeof analysisHistory.$inferSelect;
+export type InsertAnalysisHistory = typeof analysisHistory.$inferInsert;
+
+/**
+ * Analysis results table - stores detailed improvement suggestions for each analysis
+ */
+export const analysisResults = mysqlTable("analysis_results", {
+  id: int("id").autoincrement().primaryKey(),
+  analysisId: int("analysisId").notNull(),
+  titleSuggestion: text("titleSuggestion"),
+  summaryImprovement: text("summaryImprovement"),
+  suggestedTags: text("suggestedTags"), // JSON array stored as text
+  suggestedCategories: text("suggestedCategories"), // JSON array stored as text
+  missingSections: text("missingSections"), // JSON array stored as text
+  visualEnhancements: text("visualEnhancements"), // JSON array stored as text
+  readmeAnalysis: text("readmeAnalysis"),
+  codeStructureAnalysis: text("codeStructureAnalysis"),
+  overallScore: int("overallScore"),
+  rawAnalysisData: text("rawAnalysisData"), // Full JSON response from agents
+  createdAt: timestamp("createdAt").defaultNow().notNull(),
+});
+
+export type AnalysisResults = typeof analysisResults.$inferSelect;
+export type InsertAnalysisResults = typeof analysisResults.$inferInsert;

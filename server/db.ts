@@ -1,6 +1,6 @@
 import { eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/mysql2";
-import { InsertUser, users } from "../drizzle/schema";
+import { InsertUser, users, analysisHistory, analysisResults, InsertAnalysisResults } from "../drizzle/schema";
 import { ENV } from './_core/env';
 
 let _db: ReturnType<typeof drizzle> | null = null;
@@ -89,4 +89,98 @@ export async function getUserByOpenId(openId: string) {
   return result.length > 0 ? result[0] : undefined;
 }
 
-// TODO: add feature queries here as your schema grows.
+export async function createAnalysis(
+  userId: number,
+  repositoryUrl: string,
+  repositoryName: string,
+  repositoryOwner: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const result = await db.insert(analysisHistory).values({
+    userId,
+    repositoryUrl,
+    repositoryName,
+    repositoryOwner,
+    status: "pending",
+  });
+
+  return result;
+}
+
+export async function updateAnalysisStatus(
+  analysisId: number,
+  status: "pending" | "processing" | "completed" | "failed",
+  errorMessage?: string
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db
+    .update(analysisHistory)
+    .set({ status, errorMessage: errorMessage || null, updatedAt: new Date() })
+    .where(eq(analysisHistory.id, analysisId));
+}
+
+export async function saveAnalysisResults(
+  analysisId: number,
+  results: Omit<InsertAnalysisResults, 'analysisId'>
+) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.insert(analysisResults).values({
+    analysisId,
+    ...(results as any),
+  });
+}
+
+export async function getAnalysisById(analysisId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const analysis = await db
+    .select()
+    .from(analysisHistory)
+    .where(eq(analysisHistory.id, analysisId))
+    .limit(1);
+
+  return analysis.length > 0 ? analysis[0] : null;
+}
+
+export async function getAnalysisResults(analysisId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  const results = await db
+    .select()
+    .from(analysisResults)
+    .where(eq(analysisResults.analysisId, analysisId))
+    .limit(1);
+
+  return results.length > 0 ? results[0] : null;
+}
+
+export async function getUserAnalysisHistory(userId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  return await db
+    .select()
+    .from(analysisHistory)
+    .where(eq(analysisHistory.userId, userId))
+    .orderBy(analysisHistory.createdAt);
+}
+
+export async function deleteAnalysis(analysisId: number) {
+  const db = await getDb();
+  if (!db) throw new Error("Database not available");
+
+  await db.delete(analysisResults).where(eq(analysisResults.analysisId, analysisId));
+  await db.delete(analysisHistory).where(eq(analysisHistory.id, analysisId));
+}
+
+// Re-export types for use in routers
+export type AnalysisHistory = typeof analysisHistory.$inferSelect;
+export type AnalysisResults = typeof analysisResults.$inferSelect;
